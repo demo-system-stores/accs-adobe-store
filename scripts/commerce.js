@@ -273,12 +273,36 @@ export function mapProductAcdl(product) {
   };
 }
 
-window.categoryData = window.categoryData || fetch(`${window.origin}/data/data.json`)
-  .then((response) => {
+window.categoryData = window.categoryData || fetch(`${window.origin}/data/nav.json`)//changed data.json to nav.json
+  .then(async (response) => {
     if (!response.ok) {
       throw new Error(`Network response was not ok ${response.statusText}`);
     }
-    return response.json();
+
+    // Added this code to Modify the response data to be used in the header.js file
+    const response_data = await response.json();
+    console.log("response_data", response_data);
+    const modified_data = {
+      data: {
+        categories: {
+          items: (response_data.categories?.data || []).map(category => ({
+            name: category.name,
+            url: category.url,
+            id: category.id,
+            properties: category.properties || [],
+            children: (response_data[category.url]?.data || []).map(child => ({
+              name: child.name,
+              url: child.url,
+              id: child.id,
+              properties: child.properties || [],
+              children: [] // If you want to go deeper, you can recursively add grandchildren here
+            }))
+          }))
+        }
+      }
+    };
+    return modified_data;
+    //return response.json();
   });
 
 export function getProperty(items, propertyName, searchCriteria) {
